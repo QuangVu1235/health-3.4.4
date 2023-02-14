@@ -235,9 +235,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
             switch samplesOrNil {
             case let (samples as [HKQuantitySample]) as Any:
-                
+                let unit = self.unitLookUp(key: dataTypeKey)
                 let dictionaries = samples.map { sample -> NSDictionary in
-                    let unit = self.unitLookUp(key: dataTypeKey)
                     if(sample.sourceRevision.source.bundleIdentifier.hasPrefix("com.apple.health")){
                         return [
                             "uuid": "\(sample.uuid)",
