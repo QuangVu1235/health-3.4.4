@@ -287,6 +287,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                 if (dataTypeKey == self.HEADACHE_SEVERE) {
                     samplesCategory = samplesCategory.filter { $0.value == 4 }
                 }
+                print("Category")
                 let categories = samplesCategory.map { sample -> NSDictionary in
                     return [
                         "uuid": "\(sample.uuid)",
@@ -302,7 +303,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                 }
                 
             case let (samplesWorkout as [HKWorkout]) as Any:
-                
+                print("Category")
                 let dictionaries = samplesWorkout.map { sample -> NSDictionary in
                     return [
                         "uuid": "\(sample.uuid)",
@@ -362,12 +363,47 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
 
             let totalSteps = Int(steps)
-            DispatchQueue.main.async {
-                result(totalSteps)
+            self.getStepAddManual(startDate: dateFrom, endDate: dateTo){
+                (value) in DispatchQueue.main.async {
+                    result(totalSteps  - value)
+                }
             }
+            
         }
 
         HKHealthStore().execute(query)
+    }
+    
+    func getStepAddManual(startDate: Date, endDate: Date, completion: @escaping (Int) -> Void){
+        let sampleType = HKObjectType.quantityType(forIdentifier: .stepCount)!
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+
+        let query = HKSampleQuery(sampleType: sampleType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) {
+            (query, samples, error) in
+            
+            guard error == nil else {
+                print("Error: \(error!.localizedDescription)")
+                return
+            }
+            
+            guard let samples = samples as? [HKQuantitySample] else {
+                return
+            }
+            var steps = 0.0
+            for sample in samples {
+                if(sample.sourceRevision.source.bundleIdentifier.hasPrefix("com.apple.Health")){
+                    steps = steps + sample.quantity.doubleValue(for: HKUnit.count())
+                }
+            }
+            
+            
+            DispatchQueue.main.async {
+                completion(Int(steps))
+            }
+            
+        }
+        HKHealthStore().execute(query)
+    
     }
 
     func unitLookUp(key: String) -> HKUnit {
