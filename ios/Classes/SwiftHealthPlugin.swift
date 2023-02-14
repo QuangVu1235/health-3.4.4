@@ -248,7 +248,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                             "source_name": sample.sourceRevision.source.name
                         ]
                     }else{
-                        return [s
+                        return [
                             "uuid": "\(sample.uuid)",
                             "value": 0.0,
                             "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
