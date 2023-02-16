@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(HealthApp());
 
@@ -42,15 +43,21 @@ class _HealthAppState extends State<HealthApp> {
       // HealthDataType.DISTANCE_WALKING_RUNNING,
     ];
 
+    // get steps for today (i.e., since midnight)
+    final now = DateTime.now();
+
+
     // with coresponsing permissions
     final permissions = [
       HealthDataAccess.READ,
     ];
 
     // get data within the last 24 hours
-    final now = DateTime.now();
-    final start = DateTime(now.year,now.month,now.day -1);
+
+    final start = DateTime(now.year, now.month, now.day - 1);
     final end = start.add(Duration(hours: 24));
+    // final midnight = DateTime(now.year, now.month - 1, 1, 0, 0);
+    final midnight = DateTime(now.year, now.month, now.day);
 
     // requesting access to the data types before reading them
     // note that strictly speaking, the [permissions] are not
@@ -60,14 +67,29 @@ class _HealthAppState extends State<HealthApp> {
     if (requested) {
       try {
         // fetch health data
-        print("Fetching health data from $start to $end");
-        List<HealthDataPoint> healthData = await health.getHealthDataFromTypes(start, end, types);
+        print("Fetching health data from $midnight to $now");
+        List<HealthDataPoint> healthData = await health.getHealthDataFromTypes(midnight, now, types);
+        var total = 0;
+        healthData.forEach((element) {
+          print('----------------------------------');
+          print(element.value);
+          print(element.sourceName);
+          print(element.sourceId);
+          print(element.dateFrom);
+          print('----------------------------------');
+
+          if(element.sourceName == "Pixel 2"){
+            total+= element.value.toInt();
+          }
+            // total+= element.value.toInt();
+
+        });
+        print('----------------------------------$total');
 
         print(
             "${healthData.map((e) => e.value.toInt()).reduce((value, element) => value + element)} health data points fetched");
 
         // save all the new data points (only the first 100)
-        _healthDataList.addAll((healthData.length < 100) ? healthData : healthData.sublist(0, 100));
       } catch (error) {
         print("Exception in getHealthDataFromTypes: $error");
       }
@@ -120,7 +142,10 @@ class _HealthAppState extends State<HealthApp> {
 
     // get steps for today (i.e., since midnight)
     final now = DateTime.now();
+    // final midnight = DateTime(now.year, now.month - 1, 1, 0, 0);
     final midnight = DateTime(now.year, now.month, now.day);
+
+    await Permission.activityRecognition.request();
 
     bool requested = await health.requestAuthorization([HealthDataType.STEPS]);
 
